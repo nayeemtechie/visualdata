@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* DataVista Custom Styles */
+:root {
+  --chart-teal: #14b8a6;
+  --chart-royal: #6366f1;
+  --chart-violet: #a855f7;
+  --chart-orange: #f97316;
+  --chart-pink: #ec4899;
+  --chart-cyan: #06b6d4;
+}
+
+body {
+  @apply bg-gray-50 text-gray-900 antialiased;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Card Component Base */
+@layer components {
+  .card {
+    @apply bg-white rounded-2xl shadow-card transition-shadow duration-200;
+  }
+  
+  .card:hover {
+    @apply shadow-card-hover;
+  }
+  
+  .btn-primary {
+    @apply px-4 py-2 bg-primary-500 text-white rounded-lg font-medium 
+           hover:bg-primary-600 transition-colors duration-200;
+  }
+  
+  .btn-secondary {
+    @apply px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium 
+           hover:bg-gray-200 transition-colors duration-200;
+  }
+  
+  .toggle-btn {
+    @apply px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200;
+  }
+  
+  .toggle-btn-active {
+    @apply bg-primary-500 text-white shadow-sm;
+  }
+  
+  .toggle-btn-inactive {
+    @apply bg-gray-100 text-gray-600 hover:bg-gray-200;
+  }
+}
+
+/* Recharts Customization */
+.recharts-cartesian-axis-tick-value {
+  @apply text-xs fill-gray-500;
+}
+
+.recharts-legend-item-text {
+  @apply text-sm text-gray-700;
+}
+
+/* Drop Zone Styles */
+.dropzone {
+  @apply border-2 border-dashed border-gray-300 rounded-2xl p-12 
+         text-center cursor-pointer transition-all duration-200;
+}
+
+.dropzone:hover,
+.dropzone-active {
+  @apply border-primary-400 bg-primary-50;
+}
+
+.dropzone-reject {
+  @apply border-red-400 bg-red-50;
+}
+
+/* Modal Backdrop */
+.modal-backdrop {
+  @apply fixed inset-0 bg-black/50 flex items-center justify-center z-50;
+  backdrop-filter: blur(4px);
+}
+
+/* Smooth Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 rounded-full;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full hover:bg-gray-400;
+}
