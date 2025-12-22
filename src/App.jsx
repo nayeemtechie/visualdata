@@ -169,7 +169,7 @@ function App() {
                                 Upload Your Data
                             </h2>
                             <p className="text-gray-500 text-lg">
-                                Drag and drop an Excel or CSV file to instantly visualize your eCommerce performance
+                                Drag and drop an Excel or CSV file to instantly visualize your DXP product performance
                             </p>
                             {/* Help hint */}
                             <button
