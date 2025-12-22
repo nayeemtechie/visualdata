@@ -41,6 +41,15 @@ Toggle between:
 - Click legend items to toggle visibility
 - Each metric has customizable colors
 
+### In-App Help & Documentation
+Click the **?** icon in the header to access:
+- Getting Started guide
+- Features overview
+- Column Mapping instructions
+- Formula syntax help
+- Charts guide
+- Tips & Tricks
+
 ## Tech Stack
 - **Framework**: React 18 + Vite
 - **Styling**: Tailwind CSS

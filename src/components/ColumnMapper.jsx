@@ -38,8 +38,13 @@ export const formatNumber = (value, isPercentage = false) => {
  * Parse and evaluate a formula with column references
  * Supports: +, -, *, /, (, ), and column names in {curly braces}
  * Example: "{clicks} / {impressions} * 100"
+ * 
+ * @param {string} formula - Formula string with {column_name} references
+ * @param {Object} row - Raw data row with column names as keys
+ * @param {Object} columnMapping - Optional mapping for field->column lookups (not typically needed for raw data)
+ * @returns {number|null} - Calculated result or null if evaluation fails
  */
-export const evaluateFormula = (formula, row, columnMapping) => {
+export const evaluateFormula = (formula, row, columnMapping = {}) => {
     if (!formula || typeof formula !== 'string') return null;
 
     try {
@@ -50,32 +55,56 @@ export const evaluateFormula = (formula, row, columnMapping) => {
         for (const ref of columnRefs) {
             const columnName = ref.slice(1, -1).trim(); // Remove { and }
 
-            // Find the actual column name from mapping or use directly
-            let actualColumn = columnName;
-            for (const [field, config] of Object.entries(columnMapping)) {
-                if (config?.column === columnName || config?.label === columnName || field === columnName) {
-                    actualColumn = config?.column || columnName;
-                    break;
+            // Try to find the value in the row directly first (most common case)
+            let value = null;
+
+            // 1. Direct column name lookup (handles spaces and special chars)
+            if (row.hasOwnProperty(columnName)) {
+                value = parseFloat(row[columnName]);
+            }
+            // 2. Try case-insensitive match
+            else {
+                const lowerColumnName = columnName.toLowerCase();
+                for (const key of Object.keys(row)) {
+                    if (key.toLowerCase() === lowerColumnName) {
+                        value = parseFloat(row[key]);
+                        break;
+                    }
+                }
+            }
+            // 3. Try through columnMapping (for field names like 'attributableSales')
+            if (value === null && columnMapping) {
+                for (const [field, config] of Object.entries(columnMapping)) {
+                    if (config?.column === columnName || config?.label === columnName || field === columnName) {
+                        const actualColumn = config?.column || columnName;
+                        if (row.hasOwnProperty(actualColumn)) {
+                            value = parseFloat(row[actualColumn]);
+                        }
+                        break;
+                    }
                 }
             }
 
-            const value = parseFloat(row[actualColumn]);
-            if (isNaN(value)) {
-                return null; // Can't evaluate if any value is missing
+            if (value === null || isNaN(value)) {
+                return null; // Can't evaluate if any value is missing or NaN
             }
-            expression = expression.replace(ref, value.toString());
+
+            // Replace ALL occurrences of this reference
+            expression = expression.split(ref).join(value.toString());
         }
 
         // Safely evaluate the mathematical expression
-        // Only allow numbers, operators, parentheses, and whitespace
+        // Only allow numbers, operators, parentheses, decimal points, and whitespace
         if (!/^[\d\s+\-*/().]+$/.test(expression)) {
+            console.warn('Formula contains invalid characters:', expression);
             return null;
         }
 
         // Use Function constructor for safe math evaluation
         const result = Function(`"use strict"; return (${expression})`)();
-        return typeof result === 'number' && !isNaN(result) ? result : null;
-    } catch {
+        return typeof result === 'number' && !isNaN(result) && isFinite(result) ? result : null;
+    } catch (err) {
+        console.warn('Formula evaluation error:', err.message, 'Formula:', formula);
         return null;
     }
 };

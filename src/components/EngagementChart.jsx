@@ -21,7 +21,7 @@ const EngagementChart = ({ data = [], columnMapping = {} }) => {
     const [granularity, setGranularity] = useState(GRANULARITY.DAILY);
     const [hiddenMetrics, setHiddenMetrics] = useState(new Set());
 
-    // Build available metrics from column mapping - focused on engagement metrics
+    // Build available metrics from column mapping - include ALL mapped fields
     const availableMetrics = useMemo(() => {
         const metrics = [];
 
@@ -37,46 +37,20 @@ const EngagementChart = ({ data = [], columnMapping = {} }) => {
             });
         }
 
-        // Add other mapped metrics that are engagement-related
-        const engagementFields = ['impressions', 'clicks'];
-        engagementFields.forEach(field => {
-            const config = columnMapping[field];
+        // Add ALL other mapped metrics (including formula fields and custom fields)
+        Object.entries(columnMapping).forEach(([field, config]) => {
+            if (field === 'date' || field === 'ctr') return;
             if (!config?.column) return;
 
+            // Include formula fields (column === '__formula__') and regular columns
             metrics.push({
                 field,
                 label: config.label || config.column,
-                aggregationType: AGGREGATION_TYPE.SUM,
+                aggregationType: config.isPercentage ? AGGREGATION_TYPE.AVERAGE : AGGREGATION_TYPE.SUM,
                 color: config.color || CHART_COLORS[metrics.length % CHART_COLORS.length],
                 isPercentage: config.isPercentage || false,
                 formula: config.formula,
             });
-        });
-
-        // Add any custom fields that look like engagement metrics
-        Object.entries(columnMapping).forEach(([field, config]) => {
-            if (['date', 'attributableSales', 'ctr', 'impressions', 'clicks'].includes(field)) return;
-            if (!config?.column) return;
-
-            // Only include if it's a percentage or contains rate/engagement keywords
-            const lowerLabel = (config.label || config.column || '').toLowerCase();
-            const isEngagementMetric = config.isPercentage ||
-                lowerLabel.includes('rate') ||
-                lowerLabel.includes('exit') ||
-                lowerLabel.includes('bounce') ||
-                lowerLabel.includes('conversion') ||
-                lowerLabel.includes('cvr');
-
-            if (isEngagementMetric) {
-                metrics.push({
-                    field,
-                    label: config.label || config.column,
-                    aggregationType: config.isPercentage ? AGGREGATION_TYPE.AVERAGE : AGGREGATION_TYPE.SUM,
-                    color: config.color || CHART_COLORS[metrics.length % CHART_COLORS.length],
-                    isPercentage: config.isPercentage || false,
-                    formula: config.formula,
-                });
-            }
         });
 
         return metrics;
@@ -109,6 +83,10 @@ const EngagementChart = ({ data = [], columnMapping = {} }) => {
             } else if (config?.column && config.column !== '__formula__') {
                 mapping[field] = config.column;
             }
+            // For formula fields, map to the field name itself (we'll pre-compute values)
+            else if (config?.formula) {
+                mapping[field] = field;
+            }
         });
         return mapping;
     }, [columnMapping]);
@@ -120,32 +98,31 @@ const EngagementChart = ({ data = [], columnMapping = {} }) => {
         return valid.length > 0 ? valid : (availableMetrics.length > 0 ? [availableMetrics[0]] : []);
     }, [selectedMetrics, availableMetrics]);
 
-    // Get non-formula metrics for aggregator
-    const nonFormulaMetrics = useMemo(() => {
-        return validSelectedMetrics.filter(m => !m.formula);
-    }, [validSelectedMetrics]);
-
-    // Use the data aggregator hook
-    const { chartData: baseChartData, getMetricTotal, isEmpty } = useDataAggregator(
-        data,
-        aggregatorMapping,
-        granularity,
-        nonFormulaMetrics
-    );
-
-    // Apply formulas to chart data
-    const chartData = useMemo(() => {
+    // Pre-process data to calculate formula values on raw data BEFORE aggregation
+    const processedData = useMemo(() => {
         const formulaMetrics = validSelectedMetrics.filter(m => m.formula);
-        if (formulaMetrics.length === 0) return baseChartData;
+        if (formulaMetrics.length === 0) return data;
 
-        return baseChartData.map(row => {
+        return data.map(row => {
             const newRow = { ...row };
             formulaMetrics.forEach(metric => {
-                newRow[metric.field] = evaluateFormula(metric.formula, row, columnMapping) || 0;
+                // Evaluate formula against raw row data (has original column names)
+                const value = evaluateFormula(metric.formula, row, {});
+                if (value !== null) {
+                    newRow[metric.field] = value;
+                }
             });
             return newRow;
         });
-    }, [baseChartData, validSelectedMetrics, columnMapping]);
+    }, [data, validSelectedMetrics]);
+
+    // Use the data aggregator hook with pre-processed data
+    const { chartData, getMetricTotal, isEmpty } = useDataAggregator(
+        processedData,
+        aggregatorMapping,
+        granularity,
+        validSelectedMetrics
+    );
 
     // Handle legend click to toggle visibility
     const handleLegendClick = (entry) => {
