@@ -5,6 +5,7 @@ import SalesVelocityChart from './components/SalesVelocityChart';
 import EngagementChart from './components/EngagementChart';
 import CustomChart from './components/CustomChart';
 import HelpModal from './components/HelpModal';
+import ConfigManager from './components/ConfigManager';
 import { useFileParser } from './hooks/useFileParser';
 
 /**
@@ -84,6 +85,17 @@ function App() {
         ));
     }, []);
 
+    // Handle loading a saved configuration
+    const handleLoadConfig = useCallback((mappings, charts) => {
+        setConfirmedMappings(mappings);
+        // Restore charts with new IDs to avoid conflicts
+        const restoredCharts = charts.map((chart, index) => ({
+            ...chart,
+            id: `chart-${Date.now()}-${index}`,
+        }));
+        setCustomCharts(restoredCharts);
+    }, []);
+
     const hasData = parsedData && parsedData.length > 0 && confirmedMappings;
 
     return (
@@ -107,6 +119,14 @@ function App() {
 
                         {/* Actions */}
                         <div className="flex items-center gap-3">
+                            {/* Config Manager - Save/Load */}
+                            <ConfigManager
+                                currentMappings={confirmedMappings}
+                                currentCharts={customCharts}
+                                onLoadConfig={handleLoadConfig}
+                                hasData={hasData}
+                            />
+
                             {/* Help Button - Always Visible */}
                             <button
                                 onClick={() => setShowHelp(true)}

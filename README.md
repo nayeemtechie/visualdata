@@ -50,6 +50,14 @@ Click the **?** icon in the header to access:
 - Charts guide
 - Tips & Tricks
 
+### Configuration Persistence
+Save and load your chart configurations for reuse:
+- **Save**: Click "Save" in the header → enter a name (e.g., "Sales Report Q4")
+- **Load**: Click "Load" → select from saved configurations
+- **Delete**: Hover over a saved config → click the trash icon
+- Configurations are stored in browser localStorage
+- Re-upload your data file to apply loaded configurations
+
 ## Tech Stack
 - **Framework**: React 18 + Vite
 - **Styling**: Tailwind CSS
@@ -80,9 +88,11 @@ src/
 │   ├── DropZone.jsx       # File upload component
 │   ├── ColumnMapper.jsx   # Column mapping modal + formula support
 │   ├── ChartCard.jsx      # Reusable chart wrapper
+│   ├── ConfigManager.jsx  # Save/Load configuration UI
 │   ├── SalesVelocityChart.jsx  # Attributable Sales chart
 │   └── EngagementChart.jsx     # CTR/Engagement chart
 └── hooks/
+    ├── useConfigStorage.js # Named config persistence
     ├── useDataAggregator.js   # Time-based data aggregation
     └── useFileParser.js       # Excel/CSV parsing
 ```
