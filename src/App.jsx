@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import DropZone from './components/DropZone';
 import ColumnMapper from './components/ColumnMapper';
 import SalesVelocityChart from './components/SalesVelocityChart';
@@ -6,7 +6,9 @@ import EngagementChart from './components/EngagementChart';
 import CustomChart from './components/CustomChart';
 import HelpModal from './components/HelpModal';
 import ConfigManager from './components/ConfigManager';
+import DateRangeFilter from './components/DateRangeFilter';
 import { useFileParser } from './hooks/useFileParser';
+import { parseISO, isValid, isWithinInterval } from 'date-fns';
 
 /**
  * Report Visualizer App
@@ -17,6 +19,7 @@ function App() {
     const [showHelp, setShowHelp] = useState(false);
     const [confirmedMappings, setConfirmedMappings] = useState(null);
     const [customCharts, setCustomCharts] = useState([]);
+    const [dateRange, setDateRange] = useState({ startDate: null, endDate: null });
 
     const {
         parseFile,
@@ -65,6 +68,7 @@ function App() {
         setConfirmedMappings(null);
         setShowMapper(false);
         setCustomCharts([]);
+        setDateRange({ startDate: null, endDate: null });
     }, [reset]);
 
     const handleAddChart = useCallback(() => {
@@ -97,6 +101,51 @@ function App() {
     }, []);
 
     const hasData = parsedData && parsedData.length > 0 && confirmedMappings;
+
+    // Parse date value from various formats
+    const parseDate = (value) => {
+        if (!value) return null;
+        if (value instanceof Date) return isValid(value) ? value : null;
+        if (typeof value === 'number') {
+            // Excel serial date
+            const excelEpoch = new Date(1899, 11, 30);
+            const millisecondsPerDay = 24 * 60 * 60 * 1000;
+            const date = new Date(excelEpoch.getTime() + value * millisecondsPerDay);
+            return isValid(date) ? date : null;
+        }
+        if (typeof value === 'string') {
+            let date = parseISO(value);
+            if (isValid(date)) return date;
+            date = new Date(value);
+            return isValid(date) ? date : null;
+        }
+        return null;
+    };
+
+    // Filter data by date range
+    const filteredData = useMemo(() => {
+        if (!parsedData || !confirmedMappings) return parsedData || [];
+
+        const { startDate, endDate } = dateRange;
+        if (!startDate && !endDate) return parsedData;
+
+        const dateColumn = confirmedMappings.date?.column;
+        if (!dateColumn) return parsedData;
+
+        return parsedData.filter(row => {
+            const rowDate = parseDate(row[dateColumn]);
+            if (!rowDate) return true; // Keep rows without valid dates
+
+            if (startDate && endDate) {
+                return isWithinInterval(rowDate, { start: startDate, end: endDate });
+            } else if (startDate) {
+                return rowDate >= startDate;
+            } else if (endDate) {
+                return rowDate <= endDate;
+            }
+            return true;
+        });
+    }, [parsedData, confirmedMappings, dateRange]);
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -269,10 +318,17 @@ function App() {
                     /* Dashboard State */
                     <div className="space-y-6">
                         {/* Stats Bar */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                             <div className="card p-4">
                                 <p className="text-sm text-gray-500 mb-1">Data Points</p>
-                                <p className="text-2xl font-bold text-gray-900">{parsedData.length.toLocaleString()}</p>
+                                <p className="text-2xl font-bold text-gray-900">
+                                    {filteredData.length.toLocaleString()}
+                                    {filteredData.length !== parsedData.length && (
+                                        <span className="text-sm font-normal text-gray-400 ml-1">
+                                            / {parsedData.length.toLocaleString()}
+                                        </span>
+                                    )}
+                                </p>
                             </div>
                             <div className="card p-4">
                                 <p className="text-sm text-gray-500 mb-1">Columns</p>
@@ -300,16 +356,24 @@ function App() {
                                     </svg>
                                 </button>
                             </div>
+                            {/* Date Range Filter */}
+                            <div className="card p-4 flex items-center">
+                                <DateRangeFilter
+                                    startDate={dateRange.startDate}
+                                    endDate={dateRange.endDate}
+                                    onChange={setDateRange}
+                                />
+                            </div>
                         </div>
 
                         {/* Default Charts Grid */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <SalesVelocityChart
-                                data={parsedData}
+                                data={filteredData}
                                 columnMapping={confirmedMappings}
                             />
                             <EngagementChart
-                                data={parsedData}
+                                data={filteredData}
                                 columnMapping={confirmedMappings}
                             />
                         </div>
@@ -321,7 +385,7 @@ function App() {
                                     <CustomChart
                                         key={chart.id}
                                         id={chart.id}
-                                        data={parsedData}
+                                        data={filteredData}
                                         columnMapping={confirmedMappings}
                                         columns={columns}
                                         initialConfig={chart.config}

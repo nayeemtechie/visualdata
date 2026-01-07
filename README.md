@@ -58,6 +58,13 @@ Save and load your chart configurations for reuse:
 - Configurations are stored in browser localStorage
 - Re-upload your data file to apply loaded configurations
 
+### Date Range Filter
+Narrow your data to specific time periods:
+- **Quick Presets**: Last 7/30/90 days, Last Quarter, Year to Date
+- **Custom Range**: Select specific start and end dates
+- Applied globally to all charts
+- Data count shows filtered vs total (e.g., "92 / 365")
+
 ## Tech Stack
 - **Framework**: React 18 + Vite
 - **Styling**: Tailwind CSS
