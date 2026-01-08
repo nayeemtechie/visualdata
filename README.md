@@ -65,12 +65,27 @@ Narrow your data to specific time periods:
 - Applied globally to all charts
 - Data count shows filtered vs total (e.g., "92 / 365")
 
+### Export Features
+Export your charts for reports and presentations:
+- **📄 Export PDF**: Download all charts as a single PDF file
+- **📋 Copy to Clipboard**: Copy all charts as an image (paste into docs, emails, etc.)
+- Buttons located in header next to "Add Chart"
+- Toast notifications confirm success/failure
+
+### Custom Charts
+Create unlimited custom charts with:
+- Choose X-axis and Y-axis metrics
+- Select chart type (Line, Area, Bar)
+- Custom titles and captions
+- Delete individual charts
+
 ## Tech Stack
 - **Framework**: React 18 + Vite
 - **Styling**: Tailwind CSS
 - **Charts**: Recharts
 - **Data Parsing**: SheetJS (xlsx)
 - **Date Handling**: date-fns
+- **Export**: html2canvas, jsPDF
 
 ## Getting Started
 
@@ -90,19 +105,23 @@ Generates static files in `dist/` folder ready for CDN deployment.
 ## Project Structure
 ```
 src/
-├── App.jsx                 # Main application component
+├── App.jsx                     # Main application component
 ├── components/
-│   ├── DropZone.jsx       # File upload component
-│   ├── ColumnMapper.jsx   # Column mapping modal + formula support
-│   ├── ChartCard.jsx      # Reusable chart wrapper
-│   ├── ConfigManager.jsx  # Save/Load configuration UI
+│   ├── DropZone.jsx            # File upload component
+│   ├── ColumnMapper.jsx        # Column mapping modal + formula support
+│   ├── ChartCard.jsx           # Reusable chart wrapper
+│   ├── ConfigManager.jsx       # Save/Load configuration UI
+│   ├── DateRangeFilter.jsx     # Global date range filter
+│   ├── CustomChart.jsx         # User-created custom charts
 │   ├── SalesVelocityChart.jsx  # Attributable Sales chart
 │   └── EngagementChart.jsx     # CTR/Engagement chart
 └── hooks/
-    ├── useConfigStorage.js # Named config persistence
-    ├── useDataAggregator.js   # Time-based data aggregation
-    └── useFileParser.js       # Excel/CSV parsing
+    ├── useConfigStorage.js     # Named config persistence
+    ├── useChartExport.js       # PDF export & clipboard copy
+    ├── useDataAggregator.js    # Time-based data aggregation
+    └── useFileParser.js        # Excel/CSV parsing
 ```
 
 ## License
 Proprietary - Algonomy
+
