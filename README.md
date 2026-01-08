@@ -122,6 +122,3 @@ src/
     └── useFileParser.js        # Excel/CSV parsing
 ```
 
-## License
-Proprietary - Algonomy
-
